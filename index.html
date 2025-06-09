@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Story Teller Amali Pro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .recorder-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .recorder-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+
+        .app-title {
+            font-size: 2.5em;
+            color: #333;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .app-subtitle {
+            color: #666;
+            font-size: 1.1em;
+            margin-bottom: 30px;
+            font-weight: 300;
+        }
+
+        .error-message {
+            background: #ff4757;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .recording-display {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .recording-display.recording {
+            border-color: #ff6b6b;
+            background: #fff5f5;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 107, 107, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0); }
+        }
+
+        .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #28a745;
+            display: inline-block;
+            margin-right: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .status-indicator.recording {
+            background: #dc3545;
+            animation: blink 1s infinite;
+        }
+
+        .status-indicator.paused {
+            background: #ffc107;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+
+        .status-text {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .recording-time {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+            font-family: 'Courier New', monospace;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .visualizer {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            height: 60px;
+            margin: 20px 0;
+            gap: 3px;
+        }
+
+        .visualizer-bar {
+            width: 4px;
+            background: linear-gradient(to top, #667eea, #764ba2);
+            border-radius: 2px;
+            transition: height 0.1s ease;
+            min-height: 5px;
+        }
+
+        .settings {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .settings h3 {
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .setting-group {
+            margin-bottom: 15px;
+        }
+
+        .setting-group label {
+            display: block;
+            color: #555;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .setting-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .setting-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover:before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #dc3545, #e74c3c);
+            color: white;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(45deg, #ffc107, #f39c12);
+            color: #333;
+            box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 193, 7, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #6c757d, #5a6268);
+            color: white;
+            box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(108, 117, 125, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .download-section {
+            background: #e8f5e8;
+            border: 2px dashed #28a745;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .download-section.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .download-section h3 {
+            color: #28a745;
+            margin-bottom: 15px;
+        }
+
+        .download-audio {
+            display: inline-block;
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .download-audio:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+        }
+
+        .info-text {
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.6;
+            text-align: left;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-text h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .info-text ul {
+            margin-left: 20px;
+        }
+
+        .info-text li {
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 600px) {
+            .recorder-container {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            .app-title {
+                font-size: 2em;
+            }
+
+            .recording-time {
+                font-size: 2em;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="recorder-container">
+        <h1 class="app-title">📚 Story Teller Amali Pro</h1>
+        <p class="app-subtitle">Professional Story Recording Studio</p>
+        
+        <div class="error-message" id="errorMessage"></div>
+        
+        <div class="recording-display" id="recordingDisplay">
+            <div class="status-line">
+                <span class="status-indicator" id="statusIndicator"></span>
+                <span class="status-text" id="statusText">Ready to Record</span>
+            </div>
+            <div class="recording-time" id="recordingTime">00:00:00</div>
+            <div class="visualizer" id="visualizer"></div>
+        </div>
+
+        <div class="settings">
+            <h3>⚙️ Recording Settings</h3>
+            <div class="setting-group">
+                <label for="audioQuality">Audio Quality:</label>
+                <select id="audioQuality">
+                    <option value="128000">Standard (128 kbps)</option>
+                    <option value="192000" selected>High (192 kbps)</option>
+                    <option value="256000">Premium (256 kbps)</option>
+                    <option value="320000">Studio (320 kbps)</option>
+                </select>
+            </div>
+            <div class="setting-group">
+                <label for="noiseReduction">Noise Reduction:</label>
+                <select id="noiseReduction">
+                    <option value="false">Off</option>
+                    <option value="true" selected>On</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" id="startBtn">🎤 Start Recording</button>
+            <button class="btn btn-warning" id="stopBtn" disabled>⏸️ Pause</button>
+            <button class="btn btn-danger" id="completeBtn" disabled>⏹️ Complete</button>
+            <button class="btn btn-secondary" id="cancelBtn" disabled>❌ Cancel</button>
+        </div>
+
+        <div class="download-section" id="downloadSection">
+            <h3>🎉 Recording Complete!</h3>
+            <p>Your story has been recorded successfully.</p>
+            <a href="#" class="download-audio" id="downloadAudio" download="story_recording.webm">
+                📥 Download Recording
+            </a>
+        </div>
+
+        <div class="info-text">
+            <h4>💡 Tips for Great Recordings:</h4>
+            <ul>
+                <li>Find a quiet space with minimal background noise</li>
+                <li>Sit close to your microphone for clear audio</li>
+                <li>Speak clearly and at a steady pace</li>
+                <li>Use the pause feature for breaks without stopping</li>
+                <li>Maximum recording time: 3 hours</li>
+                <li>Recordings are processed locally - your privacy is protected</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        class StoryTellerRecorder {
+            constructor() {
+                this.mediaRecorder = null;
+                this.audioStream = null;
+                this.audioChunks = [];
+                this.isRecording = false;
+                this.isPaused = false;
+                this.startTime = null;
+                this.pausedTime = 0;
+                this.totalPausedTime = 0;
+                this.timerInterval = null;
+                this.maxRecordingTime = 3 * 60 * 60 * 1000; // 3 hours
+                this.visualizerInterval = null;
+                this.recordedAudio = null;
+                this.audioContext = null;
+                this.analyser = null;
+                this.init();
+            }
+
+            init() {
+                this.initializeElements();
+                this.checkBrowserSupport();
+                this.setupEventListeners();
+                this.createVisualizerBars();
+                console.log('Story Teller ready!');
+            }
+
+            checkBrowserSupport() {
+                const errorDiv = document.getElementById('errorMessage');
+                let ok = true;
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    this.showError('❌ Your browser does not support audio recording.');
+                    ok = false;
+                } else if (!window.MediaRecorder) {
+                    this.showError('❌ MediaRecorder is not supported in your browser.');
+                    ok = false;
+                } else if (location.protocol !== 'https:' 
+                    && location.hostname !== 'localhost' 
+                    && location.hostname !== '127.0.0.1'
+                    && !location.hostname.includes('claude.ai')) {
+                    this.showError('🔒 Microphone access requires HTTPS or localhost.');
+                    ok = false;
+                }
+                
+                if (!ok && this.startBtn) this.startBtn.disabled = true;
+                return ok;
+            }
+
+            showError(message) {
+                const errorDiv = document.getElementById('errorMessage');
+                if (errorDiv) {
+                    errorDiv.textContent = message;
+                    errorDiv.style.display = 'block';
+                }
+                console.error(message);
+            }
+
+            hideError() {
+                const errorDiv = document.getElementById('errorMessage');
+                if (errorDiv) errorDiv.style.display = 'none';
+            }
+
+            initializeElements() {
+                this.startBtn = document.getElementById('startBtn');
+                this.stopBtn = document.getElementById('stopBtn');
+                this.completeBtn = document.getElementById('completeBtn');
+                this.cancelBtn = document.getElementById('cancelBtn');
+                this.recordingTime = document.getElementById('recordingTime');
+                this.statusText = document.getElementById('statusText');
+                this.statusIndicator = document.getElementById('statusIndicator');
+                this.downloadSection = document.getElementById('downloadSection');
+                this.downloadAudio = document.getElementById('downloadAudio');
+                this.visualizer = document.getElementById('visualizer');
+                this.noiseReduction = document.getElementById('noiseReduction');
+                this.audioQuality = document.getElementById('audioQuality');
+                this.recordingDisplay = document.getElementById('recordingDisplay');
+            }
+
+            setupEventListeners() {
+                this.startBtn?.addEventListener('click', () => this.startRecording());
+                this.stopBtn?.addEventListener('click', () => this.pauseRecording());
+                this.completeBtn?.addEventListener('click', () => this.completeRecording());
+                this.cancelBtn?.addEventListener('click', () => this.cancelRecording());
+            }
+
+            createVisualizerBars() {
+                if (!this.visualizer) return;
+                
+                this.visualizer.innerHTML = '';
+                for (let i = 0; i < 32; i++) {
+                    const bar = document.createElement('div');
+                    bar.className = 'visualizer-bar';
+                    bar.style.height = '5px';
+                    this.visualizer.appendChild(bar);
+                }
+            }
+
+            async startRecording() {
+                try {
+                    this.hideError();
+                    
+                    const constraints = {
+                        audio: {
+                            echoCancellation: this.noiseReduction.value === 'true',
+                            noiseSuppression: this.noiseReduction.value === 'true',
+                            autoGainControl: true,
+                            sampleRate: 48000
+                        }
+                    };
+
+                    this.audioStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    
+                    // Setup audio context for visualization
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    this.analyser = this.audioContext.createAnalyser();
+                    const source = this.audioContext.createMediaStreamSource(this.audioStream);
+                    source.connect(this.analyser);
+                    this.analyser.fftSize = 64;
+
+                    const options = {
+                        mimeType: 'audio/webm;codecs=opus',
+                        audioBitsPerSecond: parseInt(this.audioQuality.value)
+                    };
+
+                    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                        options.mimeType = 'audio/webm';
+                    }
+
+                    this.mediaRecorder = new MediaRecorder(this.audioStream, options);
+                    this.audioChunks = [];
+
+                    this.mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            this.audioChunks.push(event.data);
+                        }
+                    };
+
+                    this.mediaRecorder.start(1000);
+                    this.isRecording = true;
+                    this.isPaused = false;
+                    this.startTime = Date.now();
+                    this.totalPausedTime = 0;
+
+                    this.updateUI();
+                    this.startTimer();
+                    this.startVisualizer();
+
+                } catch (error) {
+                    this.showError(`Failed to start recording: ${error.message}`);
+                    console.error('Recording error:', error);
+                }
+            }
+
+            pauseRecording() {
+                if (!this.mediaRecorder || !this.isRecording) return;
+
+                if (this.isPaused) {
+                    // Resume recording
+                    this.mediaRecorder.resume();
+                    this.isPaused = false;
+                    this.pausedTime = Date.now();
+                } else {
+                    // Pause recording
+                    this.mediaRecorder.pause();
+                    this.isPaused = true;
+                    this.totalPausedTime += Date.now() - this.pausedTime;
+                }
+
+                this.updateUI();
+            }
+
+            completeRecording() {
+                if (!this.mediaRecorder) return;
+
+                this.mediaRecorder.stop();
+                this.isRecording = false;
+                this.isPaused = false;
+
+                this.stopTimer();
+                this.stopVisualizer();
+  
